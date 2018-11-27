@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>arduino_tlt_sensor</name>
+  <version>0.0.0</version>
+  <description>The arduino_tlt_sensor package</description>
+  <maintainer email="vadim.manaenko@aira.life">Vadim Manaenko</maintainer>
+  <license>BSD3</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>
+  <build_export_depend>rospy</build_export_depend>
+  <exec_depend>rospy</exec_depend>
+
+  <export>
+  </export>
+
+</package>

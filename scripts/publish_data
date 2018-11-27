@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import rospy
+import rosbag
+import ipfsapi
+from robonomics_msgs.msg import Demand, Result, Multihash
+from tempfile import NamedTemporaryFile
+from std_msgs.msg import UInt32
+
+class PublishData:
+    MODEL = "QmQsMXoZKPNtGoTMpiGASU2Xxk6cJnEWdj7Bdt9mJo6UFD"
+    TOKEN = "0xc34B089D3Dfe7bdf39a7Cd3D64116b2395dba845"
+
+    def __init__(self):
+        rospy.init_node("sensor_publisher")
+
+        self.ipfs = ipfsapi.connect()
+
+        self.noise = 0
+        self.particle = 0
+
+        self.pubresult = rospy.Publisher("/liability/infochan/eth/signing/result", Result, queue_size=10)
+
+        def update_noise(data):
+            self.noise = data.data
+        rospy.Subscriber("/noise", UInt32, update_noise)
+
+        def update_particle(data):
+            self.particle = data.data
+        rospy.Subscriber("/particle", UInt32, update_particle)
+
+        def publish_data(demand):
+            if demand.model.multihash == self.MODEL and
+               demand.token == self.TOKEN and
+               demand.cost == 0:
+                rospy.loginfo("My model and token, cost 0")
+
+                with NamedTemporaryFile(dir="/storage/rosbag/", delete=False) as tmpfile:
+                    recorder = rosbag.Bag(tmpfile.name, 'w')
+                    recorder.write('/noise', UInt32(data=self.noise))
+                    recorder.write('/particle', UInt32(data=self.particle))
+                    recorder.close()
+
+                    ipfs_response = self.ipfs.add(tmpfile.name)
+
+                    res = Result()
+                    res.liability = "0x0000000000000000000000000000000000000000"
+                    res.result = Multihash(multihash=ipfs_response['Hash'])
+                    res.success = True
+
+                    self.pubresult.publish(res)
+
+        rospy.Subscriber("/liability/infochan/incoming/demand", Demand, publish_data)
+
+    def spin(self):
+        rospy.spin()
+
+if __name__ == "__main__":
+    PublishData().spin()

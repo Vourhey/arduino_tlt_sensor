@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="arduino_tlt_sensor" type="publish_data" name="sensor_publisher" output="screen">
+  </node>
+</launch>
