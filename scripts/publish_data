@@ -30,8 +30,8 @@ class PublishData:
 
         def update_particle(data):
             voltage = data.data * (5.0 / 1023)
-            rs_gas = (5.0 - voltage) / voltage
-            self.particle = 3.027 * math.pow(1.0698, ratio);
+            rs_gas = voltage # (5.0 - voltage) / voltage
+            self.particle = 3.027 * math.pow(1.0698, rs_gas);
         rospy.Subscriber("/particle", UInt32, update_particle)
 
         def publish_data(demand):
@@ -41,7 +41,7 @@ class PublishData:
                 with NamedTemporaryFile(dir="/storage/rosbag/", delete=False) as tmpfile:
                     recorder = rosbag.Bag(tmpfile.name, 'w')
 
-                    output = "Noise: {} dB, CO: {} PPM".format(self.noise, self.particle)
+                    output = "Noise: {0:.2f} dB, CO: {0:.2f} PPM".format(self.noise, self.particle)
                     recorder.write('/worker/data', String(data=output))
                     recorder.close()
 
