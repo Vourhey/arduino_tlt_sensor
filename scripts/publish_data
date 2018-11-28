@@ -4,13 +4,14 @@
 import rospy
 import rosbag
 import ipfsapi
+import math
 from robonomics_msgs.msg import Demand, Result, Multihash
 from tempfile import NamedTemporaryFile
-from std_msgs.msg import UInt32
+from std_msgs.msg import UInt32, String
 
 class PublishData:
     MODEL = "QmQsMXoZKPNtGoTMpiGASU2Xxk6cJnEWdj7Bdt9mJo6UFD"
-    TOKEN = "0xc34B089D3Dfe7bdf39a7Cd3D64116b2395dba845"
+    TOKEN = "0x98DFc5247da729c045D4938bABD081A61a455776"
 
     def __init__(self):
         rospy.init_node("sensor_publisher")
@@ -23,23 +24,25 @@ class PublishData:
         self.pubresult = rospy.Publisher("/liability/infochan/eth/signing/result", Result, queue_size=10)
 
         def update_noise(data):
-            self.noise = data.data
+            voltage = data.data * (5.0 / 1023)
+            self.noise = -20 * math.log10(voltage / 5.0)
         rospy.Subscriber("/noise", UInt32, update_noise)
 
         def update_particle(data):
-            self.particle = data.data
+            voltage = data.data * (5.0 / 1023)
+            rs_gas = (5.0 - voltage) / voltage
+            self.particle = 3.027 * math.pow(1.0698, ratio);
         rospy.Subscriber("/particle", UInt32, update_particle)
 
         def publish_data(demand):
-            if demand.model.multihash == self.MODEL and
-               demand.token == self.TOKEN and
-               demand.cost == 0:
+            if demand.model.multihash == self.MODEL and demand.token == self.TOKEN and demand.cost == 0:
                 rospy.loginfo("My model and token, cost 0")
 
                 with NamedTemporaryFile(dir="/storage/rosbag/", delete=False) as tmpfile:
                     recorder = rosbag.Bag(tmpfile.name, 'w')
-                    recorder.write('/noise', UInt32(data=self.noise))
-                    recorder.write('/particle', UInt32(data=self.particle))
+
+                    output = "Noise: {} dB, CO: {} PPM".format(self.noise, self.particle)
+                    recorder.write('/worker/data', String(data=output))
                     recorder.close()
 
                     ipfs_response = self.ipfs.add(tmpfile.name)
